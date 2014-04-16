@@ -29,20 +29,20 @@ function gocoin_link($params) {
     $callback_url       = $params['systemurl'] . '/modules/gateways/callback/gocoin.php';
     $success_return_url = $params['returnurl'];
      
-    $firstname = $params['clientdetails']['firstname'];
-    $lastname  = $params['clientdetails']['lastname'];
-    $customer  = $firstname . ' ' . $lastname;
-    $email     = $params['clientdetails']['email'];
-    $address1  = $params['clientdetails']['address1'];
-    $address2  = $params['clientdetails']['address2'];
-    $city      = $params['clientdetails']['city'];
-    $state     = $params['clientdetails']['state'];
-    $postcode  = $params['clientdetails']['postcode'];
-    $country   = $params['clientdetails']['country'];
-    $phone     = $params['clientdetails']['phonenumber'];
+    $firstname           = $params['clientdetails']['firstname'];
+    $lastname            = $params['clientdetails']['lastname'];
+    $customer            = $firstname . ' ' . $lastname;
+    $email               = $params['clientdetails']['email'];
+    $address1            = $params['clientdetails']['address1'];
+    $address2            = $params['clientdetails']['address2'];
+    $city                = $params['clientdetails']['city'];
+    $state               = $params['clientdetails']['state'];
+    $postcode            = $params['clientdetails']['postcode'];
+    $country             = $params['clientdetails']['country'];
+    $phone               = $params['clientdetails']['phonenumber'];
 
-    $cart_Gocoin_ID = isset($params['invoicenum']) ?$params['invoicenum']:$params['invoiceid'] ;
-    $order_id = $cart_Gocoin_ID;
+    $cart_Gocoin_ID      = $params['invoiceid'];
+    $order_id            = $cart_Gocoin_ID;
 
     $options = array(
         'base_price'            => $params['amount'],
@@ -79,6 +79,9 @@ $( "#gocoin_buttion" ).click(function() {
   var paytype = $( "#paytype" ).val();
  var url  ="modules/gateways/gocoin/order_process.php?paytype="+paytype;
  var data  =$("#g_data").val();
+ $("img").each(function(index) {    
+    $(this).show();
+ });
     $.ajax({
       type: "POST",
       url: url,
@@ -103,6 +106,12 @@ $( "#gocoin_buttion" ).click(function() {
 });
 </script>';
 $code.="<script language='javascript'>
+
+        $(document).ready(function() {
+               $('.alert.alert-block.alert-warn > p').html('Payment Type' );
+        });
+
+
  $('img').each(function(index) {    
     if (this.src == '".$params['systemurl']."/images/loading.gif'){
         $(this).hide(); 
@@ -115,12 +124,11 @@ $code.="<script language='javascript'>
 }
 
 function gocoin_activate() {
-
     $query = "CREATE TABLE IF NOT EXISTS `gocoin_ipn` (
                     `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
                     `order_id` int(10) unsigned DEFAULT NULL,
                     `invoice_id` varchar(200) NOT NULL,
-                    `url` varchar(400) NOT NULL,
+                    `url` varchar(200) NOT NULL,
                     `status` varchar(100) NOT NULL,
                     `btc_price` decimal(16,8) NOT NULL,
                     `price` decimal(16,8) NOT NULL,
@@ -129,14 +137,21 @@ function gocoin_activate() {
                     `invoice_time` datetime NOT NULL,
                     `expiration_time` datetime NOT NULL,
                     `updated_time` datetime NOT NULL,
+                    `url` varchar(250) NOT NULL,
+                    `fingerprint` varchar(250) NOT NULL,
                     PRIMARY KEY (`id`)
                   );";
     return $result = mysql_query($query);
 }
 
 function create_gocoin_token($baseUrl) {
+$moduleName     = "gocoin";
+$GATEWAY        = getGatewayVariables($moduleName);
+$client_id      = $GATEWAY['module_payment_gocoin_client_id'];
+$client_secret  = $GATEWAY['module_payment_gocoin_sequrity_key'];
 
-        $str = '<b>you can click button to get access token from gocoin.com</b><input type="button" value="Get API TOKEN" onclick="return get_api_token(this.form);">';
+        $str = '<input type="hidden" id="cid"  value="'.$client_id.'"/>
+                <input type="hidden" id="csec" value="'.$client_secret.'"/><b>you can click button to get access token from gocoin.com</b><input type="button" value="Get API TOKEN" onclick="return get_api_token(this.form);">';
         $str.= '<script type="text/javascript">
             var base ="' . $baseUrl . '";
             function get_api_token(obj)    
@@ -164,8 +179,17 @@ function create_gocoin_token($baseUrl) {
                         alert("Please input Client Secret Key !");
                         return false;
                     }
+                    
+
+                    var cid = document.getElementById("cid").value;
+                    var csec = document.getElementById("csec").value;
+                    if (client_id != cid || client_secret != csec) {
+                       alert("Please save changed Client Id and Client Secret Key first!");
+                       return;
+                    }
+
                     var currentUrl =  base+ "/modules/gateways/gocoin/create_token.php";
-                     alert(currentUrl);
+                    //   alert(currentUrl);
                     var url = "https://dashboard.gocoin.com/auth?response_type=code"
                                 + "&client_id=" + client_id
                                 + "&redirect_uri=" + currentUrl

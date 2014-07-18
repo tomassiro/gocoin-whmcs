@@ -34,19 +34,20 @@ if (file_exists($file)) {
 
     $access_token = isset($GATEWAY['module_payment_gocoin_access_token']) && !empty($GATEWAY['module_payment_gocoin_access_token']) ? $GATEWAY['module_payment_gocoin_access_token'] : '';
     $gocoin_url = 'https://gateway.gocoin.com/merchant/';
-    if (empty($access_token)) {
+    
+    if (empty($access_token)) {  //-----------If  Token not found 
         $result = 'error';
         $json['error'] = 'GoCoin Payment Paramaters not Set. Please report this to Site Administrator.';
-    } else {
-
-        try {
+        $errorlog      .= 'Access Token Blank';
+    }
+    else {
+         try {
             $user = GoCoin::getUser($access_token);
 
-            if ($user) {
+            if (!empty($user)) {
                 $merchant_id = $user->merchant_id;
                 if (!empty($merchant_id)) {
-
-                    $invoice = GoCoin::createInvoice($access_token, $merchant_id, $options);
+                     $invoice = GoCoin::createInvoice($access_token, $merchant_id, $options);
                      if (isset($invoice->errors)) {
                         $result = 'error';
                         $json['error'] = 'GoCoin does not permit';
@@ -78,14 +79,28 @@ if (file_exists($file)) {
 
                         addTransaction_v1($type = 'payment', $json_array);
                     }
+                    else{ //-----------  if $invoice is balnk 
+                        $result = 'error';
+                        $json['error'] = 'Error in Processing Order using GoCoin, please try selecting other payment options';
+                        $errorlog      .=  'invoice variable blank ';
+                    }
                 }
-            } else {
-                $result = 'error';
-                $json['error'] = 'GoCoin Invalid Settings';
+                else{ //----------- If merchant_id Variable is blank 
+                    $result = 'error';
+                    $json['error'] = 'Error in Processing Order using GoCoin, please try selecting other payment options';
+                    $errorlog      .=  'merchant_id variable blank ';
+                }
             }
-        } catch (Exception $e) {
+            else{
+                $result = 'error';
+                $json['error'] = 'Error in Processing Order using GoCoin, please try selecting other payment options';
+                $errorlog      .=  'User variable blank ';
+            }
+        } 
+        catch (Exception $e) {
             $result = 'error';
-            $json['error'] = 'GoCoin does not permit';
+            $json['error'] = 'Error in Processing Order using GoCoin, please try selecting other payment options';
+            $errorlog      .=  'error in user creation from token';
         }
     }
 } else {

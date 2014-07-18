@@ -1,4 +1,4 @@
-Version 1.0.0 BETA
+Version 1.1.0 BETA
 
 �2014 GoCoin Holdings Limited and GoCoin International Group of companies hereby grants you permission to utilize a copy of this software and documentation in connection with your use of the GoCoin.com service subject the the published Terms of Use and Privacy Policy published on the site and subject to change from time to time at the discretion of GoCoin.<br><br>
 
@@ -11,9 +11,9 @@ GoCoin will send a notification to your server which this plugin handles.  Then 
 The order status in the admin panel will be "Processing" when the order is placed and payment has been confirmed. 
 
 #### Important Note: 
-Version 1.0.0 of this plugin only supports US Dollars as the Base Currency. Please make sure your Currency is set to US Dollars. Support for additional currencies is coming soon. 
+Version 1.1.0 of this plugin only supports US Dollars as the Base Currency. Please make sure your Currency is set to US Dollars. Support for additional currencies is coming soon. 
 
-This plugin now supports Bitcoin, Litecoin as well as Dogecoin
+This plugin now supports Bitcoin,Dogecoin and Litecoin as well as Dogecoin
 
 ### 1. Installation
 [WHMCS](http://www.whmcs.com/) must be installed before installing this plugin.

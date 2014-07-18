@@ -4,9 +4,10 @@ include("../../../includes/functions.php");
 include("../../../includes/gatewayfunctions.php");
 include("../../../includes/invoicefunctions.php");
 
-//include("../gocoinlib/validation.php");
 
-function getNotifyData() {
+
+//include("../gocoinlib/validation.php");
+ function getNotifyData() {
     $post_data = file_get_contents("php://input");
     if (!$post_data) {
         $response = new stdClass();
@@ -14,6 +15,11 @@ function getNotifyData() {
         return $response;
     }
     $response = json_decode($post_data);
+    error_log($response, 3, __DIR__.'/error.txt');
+    $fp = fopen(__DIR__.'/error.txt', 'w');
+    fwrite($fp, $response);
+    fclose($fp);
+
     return $response;
 }
 
@@ -47,7 +53,7 @@ function _paymentStandard() {
         $transction_id = $response->payload->id;
         $total = $response->payload->base_price;
         $status = $response->payload->status;
-
+        $crypto_balance_due= $response->payload->crypto_balance_due;
         $currency               = $response->payload->base_price_currency;
         $currency_type          = $response->payload->price_currency;
         $invoice_time           = $response->payload->created_at;
@@ -83,21 +89,55 @@ function _paymentStandard() {
                 $result = select_query("tblinvoices", "", array("id" => (int) $order_id));
                 $data = mysql_fetch_array($result, MYSQL_ASSOC);
                 switch ($event) {
+                    case 'invoice_created':
+                            $command = "updateinvoice";
+                            $values["invoiceid"] = $invoice_id; #changeme
+                            $values["status"] = "Pending";
+                            $results = localAPI($command, $values, $adminuser);
+                            logTransaction($GATEWAY["name"], $json, "Pending");
+                             # Save to Gateway Log: name, data array, status
+                            break;
+
+                    case 'invoice_payment_received':
+                        $command = "updateinvoice";
+                        $values["invoiceid"] = $order_id; #changeme
+                        $values["notes"] = $currency_type . ":{$btc_price};USD:{$price};"; #changeme
+                        if (($status == 'paid') &&  (floatval($crypto_balance_due)<=0)) {
+                            $results = localAPI($command, $values, $adminuser);
+                            $fdata = checkAlreadyLog($transction_id);
+                            if(empty($fdata)){  
+                              addInvoicePayment($order_id, $transction_id, $price, 0, $moduleName);
+                                $command = "addinvoicepayment";
+                                $values["invoiceid"] = $order_id;
+                                $values["transid"] = $transction_id;
+                                $values["amount"] = $price;
+                                $values["gateway"] = $GATEWAY['name'];
+                                $results = localAPI($command, $values, $adminuser);
+                            
+                                logTransaction($GATEWAY["name"], $json, "Successful"); # Save to Gateway Log: name, data array, status
+                            }
+                       }
+                        break;
+
                     case 'invoice_ready_to_ship':
                         $command = "updateinvoice";
                         $values["invoiceid"] = $order_id; #changeme
                         $values["notes"] = $currency_type . ":{$btc_price};USD:{$price};"; #changeme
-                        $results = localAPI($command, $values, $adminuser);
-
-                        addInvoicePayment($order_id, $transction_id, $price, 0, $moduleName);
-
-                        $command = "addinvoicepayment";
-                        $values["invoiceid"] = $order_id;
-                        $values["transid"] = $transction_id;
-                        $values["amount"] = $price;
-                        $values["gateway"] = $GATEWAY['name'];
-                        $results = localAPI($command, $values, $adminuser);
-                        logTransaction($GATEWAY["name"], $json, "Successful"); # Save to Gateway Log: name, data array, status
+                        if (($status == 'paid') || ($status == 'ready_to_ship')) {
+                            $results = localAPI($command, $values, $adminuser);
+                            $fdata = checkAlreadyLog($transction_id);
+                            if(empty($fdata)){  
+                              addInvoicePayment($order_id, $transction_id, $price, 0, $moduleName);
+                                $command = "addinvoicepayment";
+                                $values["invoiceid"] = $order_id;
+                                $values["transid"] = $transction_id;
+                                $values["amount"] = $price;
+                                $values["gateway"] = $GATEWAY['name'];
+                                $results = localAPI($command, $values, $adminuser);
+                            
+                                logTransaction($GATEWAY["name"], $json, "Successful"); # Save to Gateway Log: name, data array, status
+                            }
+                       }
                         break;
 
                     default:
@@ -141,5 +181,19 @@ function updateTransaction1($type = 'payment', $details) {
     update_query($table, $update, $where);
 }
 
+
+function checkAlreadyLog($invoice){
+    $table  = "tblaccounts";
+    $fields = "transid";
+    $where  = array("transid" => $invoice,"gateway"=>'gocoin');
+    $result = select_query($table, $fields, $where);
+    $data = mysql_fetch_array($result);
+    if (is_array($data) && isset($data['transid'])) {
+        return $data['transid'];
+    }
+    else{
+       return '' ;
+    }
+}
 _paymentStandard();
 ?>

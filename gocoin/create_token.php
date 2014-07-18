@@ -5,7 +5,6 @@ include("../../../includes/gatewayfunctions.php");
 
 $moduleName = "gocoin";
 $GATEWAY = getGatewayVariables($moduleName);
-
 $file = __DIR__ . '/gocoinlib/src/GoCoin.php';
 if (file_exists($file)) {
     include_once($file);
@@ -26,4 +25,6 @@ if (file_exists($file)) {
 
     shoGocoinToken($GATEWAY);
 }
+
+
 ?>

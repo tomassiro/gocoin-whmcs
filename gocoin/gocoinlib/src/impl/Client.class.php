@@ -22,7 +22,7 @@ class Client
     'port' => NULL,
     'path' => '/api',
     'api_version' => 'v1',
-    'secure' => true,
+    'secure' => TRUE,
     'method' => 'GET',
     'headers' => NULL,
     'request_id' => NULL,
@@ -239,28 +239,25 @@ class Client
    */
   public function getError($as_is=FALSE)
   {
+    $error = $this -> error;
     //support returning the error as-is
-    if ($as_is) { return $this -> error; }
+    if ($as_is) { return $error; }
 
     //otherwise, potentially translate it
-    if (is_object($this -> error) && get_class($this -> error) == 'stdClass')
+    if (is_object($error) && get_class($error) == 'stdClass')
     {
-      $errors = array();
-      foreach (get_object_vars($this -> error) as $key => $value)
-      {
-        if (is_array($value))
-        {
-          $errors[$key] = implode(',',$value);
-        }
-        else
-        {
-          $errors[$key] = $value;
+      if (isset($error -> error)) {
+       return $error -> error;
+      }
+      $err = $error->message . ' ';
+      if (isset($error -> errors)) {
+        foreach ($error -> errors as $key => $value) {
+          $err .= $key . ' ' . $value[0] . ' ';
         }
       }
-      $err = implode(',',array_values($errors));
-      return $err;
+      return trim($err);
     }
-    return $this -> error;
+    return $error;
   }
 
   /**
@@ -416,15 +413,15 @@ class Client
           }
         }
         //get the location header, in case anyone wants it
-        if ($data['code'] == '301' && strpos($header,'Location:') !== FALSE)
+        if (($data['code'] == '301') && (strpos($header,'Location:') !== FALSE))
         {
           //make this as successful
           $success = TRUE;
           $data['location'] = trim(substr($header, 9));
         }
         //once we see an empty header, the body is after, per the HTTP protocol
-        $header = trim($header);
-        if (empty($header)) { $append = TRUE; }
+        $htest = trim($header);
+        if (empty($htest)) { $append = TRUE; }
         //build up the body
         if ($append)
         {
@@ -458,15 +455,9 @@ class Client
     $result = json_decode($result);
 
     //make sure there isn't an error
-    if (isset($result -> error))
+    if (isset($result->status) && (intval($result->status) >= 400))
     {
-      $this -> setError($result -> error_description);
-      return FALSE;
-    }
-    //make sure there isn't an error
-    if (isset($result -> errors))
-    {
-      $this -> setError($result -> errors);
+      $this -> setError($result);
       return FALSE;
     }
 
@@ -609,7 +600,7 @@ class Client
     $opts[CURLOPT_URL] = $url;
     if ($response_headers)  { $opts[CURLOPT_HEADER] = TRUE; }
     else                    { $opts[CURLOPT_HEADER] = FALSE; }
-    $opts[CURLOPT_SSL_VERIFYPEER] = FALSE;//FALSE Is only for local testing else should be TRUE
+    $opts[CURLOPT_SSL_VERIFYPEER] = TRUE;
 
     $curl_header = array();
     if ($headers && count($headers))
@@ -628,7 +619,7 @@ class Client
     {
       $opts[CURLOPT_HTTPHEADER] = $curl_header;
     }
-   
+
     curl_setopt_array($ch, $opts);
 
     $result = curl_exec($ch);

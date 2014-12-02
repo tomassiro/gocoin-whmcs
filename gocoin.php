@@ -122,15 +122,15 @@
                     $options['user_defined_8'] = $signature;
                     
                     try {
-                      $gocoin_current_seesion = $order_id."_gocoin";
-                      if(!isset($_SESSION[$gocoin_current_seesion])){
+                      $gocoin_current_session = $order_id."_gocoin";
+                      if(!isset($_SESSION[$gocoin_current_session])){
                         $invoice = GoCoin::createInvoice($access_token, $merchant_id, $options);
                         $url = $invoice->gateway_url;
                         if (isset($_SESSION["cart"])) {
                            unset($_SESSION["cart"]);
                         }
-                        $_SESSION[$gocoin_current_seesion]=$invoice->gateway_url; 
-                        if(isset($_SESSION[$gocoin_current_seesion])){
+                        $_SESSION[$gocoin_current_session]=$invoice->gateway_url; 
+                        if(isset($_SESSION[$gocoin_current_session])){
                             $code ='<div id="submitfrm"><form id="paymentfrm" name="paymentfrm" method="get" action="'.$url.'">';
                             $code.='<a href="'.$url.'">Pay with GoCoin</a>';          
                             $code.='</form></div>';
@@ -139,8 +139,8 @@
                         
                       }
                       else{
-                            if(isset($_SESSION[$gocoin_current_seesion])){
-                             $url=    $_SESSION[$gocoin_current_seesion];
+                            if(isset($_SESSION[$gocoin_current_session])){
+                             $url=    $_SESSION[$gocoin_current_session];
                             $code ='<div id="submitfrm"><form id="paymentfrm" name="paymentfrm" method="get" action="'.$url.'">';
                             $code.='<a href="'.$url.'">Pay with GoCoin</a>';          
                             $code.='</form></div>';

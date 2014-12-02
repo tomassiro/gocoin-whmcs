@@ -30,7 +30,7 @@ function _paymentStandard() {
     $moduleName = "gocoin";
     $GATEWAY = getGatewayVariables($moduleName);
     $adminuser = $GATEWAY['whmcs_admin_username'];
-    var_dump($adminuser);
+    //var_dump($adminuser);
     // check Module is  active 
     if (!$GATEWAY["type"]){
         logTransaction("GoCoin",'','Module Not Activated');
